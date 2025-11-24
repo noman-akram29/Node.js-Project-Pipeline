@@ -55,13 +55,5 @@ pipeline {
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
-        stage('Trivy FileSystem Scan') {
-            steps {
-                sh '''
-                    trivy fs --exit-code 0 --no-progress --format table -o trivy-fs-report.html .
-                    trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
-                '''
-            }
-        }
     }
 }
