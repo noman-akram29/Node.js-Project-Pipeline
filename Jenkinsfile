@@ -54,14 +54,14 @@ pipeline {
                 dependencyCheck additionalArguments: '''
                     --scan ./
                     --disableYarnAudit
-                    --disableNodeAudit 
+                    --disableNodeAudit
                     --noupdate
+                    --data /var/lib/jenkins/tools/org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation/Dependency-Check-12.1.9-Tool/data
                     --enableExperimental
                     --out .
                     --format ALL
                     --prettyPrint
-                ''', 
-                odcInstallation: 'Dependency-Check-12.1.9-Tool'
+                ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
 
                 dependencyCheckPublisher pattern: '**/dependency-check-report.*'
             }
