@@ -49,11 +49,21 @@ pipeline {
                 sh "npm install"
             }
         }
-        stage('OWASP FileSystem Scan') {
+        stage('OWASP Dependency-Check Scan') {
             steps {
-                sh "dependency-check --scan ./ --disableYarnAudit --disableNodeAudit"
-                sh "ls -l **/dependency-check-report.xml"
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                dependencyCheck additionalArguments: '''
+                    --scan ./
+                    --disableYarnAudit
+                    --disableNodeAudit 
+                    --noupdate
+                    --enableExperimental
+                    --out .
+                    --format ALL
+                    --prettyPrint
+                ''', 
+                odcInstallation: 'Dependency-Check-12.1.9-Tool'
+
+                dependencyCheckPublisher pattern: '**/dependency-check-report.*'
             }
         }
         stage('Build & Tag Docker Image') {
