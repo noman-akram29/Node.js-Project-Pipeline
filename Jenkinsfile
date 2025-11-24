@@ -29,10 +29,10 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
-                        mvn sonar:sonar \
-                          -Dsonar.projectKey=NodeJs-Project \
-                          -Dsonar.projectName="NodeJs-Project" \
-                          -Dsonar.projectVersion=${BUILD_NUMBER}
+                        $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=NodeJs-Project \
+                        -Dsonar.projectKey=NodeJs-Project \
+                        -Dsonar.java.binaries=.
                     '''
                 }
             }
