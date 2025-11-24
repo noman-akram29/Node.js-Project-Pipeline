@@ -51,7 +51,8 @@ pipeline {
         }
         stage('OWASP FileSystem Scan') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'Dependency-Check-12.1.9-Tool'
+                sh "dependency-check --scan ./ --disableYarnAudit --disableNodeAudit"
+                sh "ls -l **/dependency-check-report.xml"
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
@@ -71,16 +72,6 @@ pipeline {
                     trivy image --exit-code 0 --format table -o trivy-image-report.html ${DOCKER_IMAGE}:${IMAGE_TAG}
                     trivy image --exit-code 1 --no-progress --severity CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}
                 """
-            }
-        }
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('', 'Docker-Token-for-Jenkins') {
-                        docker.image("${DOCKER_IMAGE}:${IMAGE_TAG}").push()
-                        docker.image("${DOCKER_IMAGE}:latest").push()
-                    }
-                }
             }
         }
     }
