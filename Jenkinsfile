@@ -17,7 +17,7 @@ pipeline {
                 git branch: 'dev', credentialsId: 'Github-Token-for-Jenkins', url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
             }
         }
-        stage('Trivy Filesystem Scan') {
+        stage('Trivy FileSystem Scan') {
             steps {
                 sh '''
                     trivy fs --exit-code 0 --no-progress --format table -o trivy-fs-report.html .
@@ -47,6 +47,20 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh "npm install"
+            }
+        }
+        stage('OWASP FileSystem Scan') {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'Dependency-Check-12.1.9-Tool'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+        stage('Trivy FileSystem Scan') {
+            steps {
+                sh '''
+                    trivy fs --exit-code 0 --no-progress --format table -o trivy-fs-report.html .
+                    trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
+                '''
             }
         }
     }
