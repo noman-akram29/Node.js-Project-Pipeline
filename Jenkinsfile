@@ -55,5 +55,33 @@ pipeline {
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
+        stage('Build & Tag Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('', 'Docker-Token-for-Jenkins') {
+                        def image = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}", ".")
+                        image.tag("latest")
+                    }
+                }
+            }
+        }
+        stage('Trivy Docker Image Scan') {
+            steps {
+                sh """
+                    trivy image --exit-code 0 --format table -o trivy-image-report.html ${DOCKER_IMAGE}:${IMAGE_TAG}
+                    trivy image --exit-code 1 --no-progress --severity CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}
+                """
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('', 'Docker-Token-for-Jenkins') {
+                        docker.image("${DOCKER_IMAGE}:${IMAGE_TAG}").push()
+                        docker.image("${DOCKER_IMAGE}:latest").push()
+                    }
+                }
+            }
+        }
     }
 }
