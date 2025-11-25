@@ -68,33 +68,30 @@ pipeline {
                 dependencyCheckPublisher pattern: 'dependency-check-report.html'
             }
         }
-        stage('Build & Tag Docker Image') {
+        stage('Build, Tag & Push Docker Image') {
             steps {
                 script {
+                    def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
                     docker.withRegistry('', 'Docker-Token-for-Jenkins') {
-                        def image = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}", ".")
-                        image.tag("latest")
+                        app.push()
+                        app.push('latest')
                     }
                 }
             }
         }
+
         stage('Trivy Docker Image Scan') {
             steps {
                 sh """
-                    trivy image --exit-code 0 --format table -o trivy-image-report.html ${DOCKER_IMAGE}:${IMAGE_TAG}
-                    trivy image --exit-code 1 --no-progress --severity CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}
+                    trivy image --format table -o trivy-image-report.html ${DOCKER_IMAGE}:${IMAGE_TAG}
+                    trivy image --exit-code 1 --no-progress --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${IMAGE_TAG}
                 """
             }
         }
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'Docker-Token-for-Jenkins') {
-                        def image = docker.image("${DOCKER_IMAGE}:${IMAGE_TAG}")
-                        image.push()
-                        image.push('latest')
-                    }
-                }
+        post {
+            always {
+                archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
             }
+        }
     }
 }
