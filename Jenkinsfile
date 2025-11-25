@@ -85,10 +85,32 @@ pipeline {
                 """
             }
         }
+        stage('Deploy Locally') {
+            when { branch 'main' }
+            steps {
+                sh '''
+                    echo "Stopping and removing old container (if exists)..."
+                    docker stop nodejs-app || true
+                    docker rm nodejs-app || true
+
+                    echo "Starting new container with image tag ${IMAGE_TAG}..."
+                    docker run -d \
+                        --name nodejs-app \
+                        --restart unless-stopped \
+                        -p 3000:3000 \
+                        ${DOCKER_IMAGE}:${IMAGE_TAG}
+
+                    echo "Deployed successfully!"
+                    echo "Your app is running at: http://$(hostname -I | awk '{print $1}'):3000"
+                '''
+            }
+        }
     }
     post {
         always {
             archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
+            sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
+            sh "docker rmi ${DOCKER_IMAGE}:latest || true"
         }
         success {
             echo 'Pipeline completed successfully!'
