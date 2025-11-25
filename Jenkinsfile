@@ -1,52 +1,61 @@
 pipeline {
     agent any
+
     tools {
         jdk 'JDK-17.0.8.1+1-Tool'
         nodejs 'NodeJS-16.2.0-Tool'
     }
+
     environment {
         SCANNER_HOME = tool 'SonarQube-Scanner-Tool'
         DOCKER_IMAGE = 'nomanakram29/nodejs-app'
         IMAGE_TAG    = "${BUILD_NUMBER}"
     }
+
     stages {
-        stage('WorkSpace CleanUp') {
+        stage('Workspace CleanUp') {
             steps { cleanWs() }
         }
 
-        stage('CheckOut from SCM') {
+        stage('Checkout from SCM') {
             steps {
-                git branch: 'dev', credentialsId: 'Github-Token-for-Jenkins', url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
+                git branch: 'dev',
+                    credentialsId: 'Github-Token-for-Jenkins',
+                    url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
             }
         }
-        stage('Trivy FileSystem Scan') {
+
+        stage('Trivy Filesystem Scan') {
             steps {
                 sh '''
                     trivy fs --exit-code 0 --no-progress --format table -o trivy-fs-report.html .
-                    trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL .
+                    trivy fs --exit-code 1 --no-progress --severity HIGH,CRITICAL --fail-on HIGH .
                 '''
             }
         }
+
         stage('Install Dependencies') {
             steps {
-                sh "npm install"
+                sh 'npm install'
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
                         $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectKey=NodeJs-Project \
-                        -Dsonar.projectName="Node.js Project" \
-                        -Dsonar.sources=. \
-                        -Dsonar.exclusions=node_modules/**,coverage/**,dist/**,test/** \
-                        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                        -Dsonar.sourceEncoding=UTF-8
+                          -Dsonar.projectKey=NodeJs-Project \
+                          -Dsonar.projectName="Node.js Project" \
+                          -Dsonar.sources=. \
+                          -Dsonar.exclusions=node_modules/**,coverage/**,dist/**,test/** \
+                          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                          -Dsonar.sourceEncoding=UTF-8
                     '''
                 }
             }
         }
+
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
@@ -54,17 +63,20 @@ pipeline {
                 }
             }
         }
-        stage('OWASP Dependency-Check Scan') {
+
+        stage('OWASP Dependency-Check') {
             steps {
                 dependencyCheck additionalArguments: '''
                     --scan ./
                     --format ALL
                     --enableExperimental
                 ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
+                
                 dependencyCheckPublisher pattern: 'dependency-check-report.html'
             }
         }
-        stage('Build, Tag & Push Docker Image') {
+
+        stage('Build & Push Docker Image') {
             steps {
                 script {
                     def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
@@ -75,7 +87,8 @@ pipeline {
                 }
             }
         }
-        stage('Trivy Docker Image Scan') {
+
+        stage('Trivy Image Scan') {
             steps {
                 sh """
                     trivy image --format table -o trivy-image-report.html ${DOCKER_IMAGE}:${IMAGE_TAG}
@@ -83,38 +96,31 @@ pipeline {
                 """
             }
         }
-        stage('Deploy on Docker') {
-            when { branch 'main' }
-            steps {
-                sh '''
-                    echo "Stopping and removing old container (if exists)..."
-                    docker stop nodejs-app || true
-                    docker rm nodejs-app || true
-
-                    echo "Starting new container with image tag ${IMAGE_TAG}..."
-                    docker run -d \
-                        --name nodejs-app \
-                        --restart unless-stopped \
-                        -p 3000:3000 \
-                        ${DOCKER_IMAGE}:${IMAGE_TAG}
-
-                    echo "Deployed successfully!"
-                    echo "Your app is running at: http://$(hostname -I | awk '{print $1}'):3000"
-                '''
-            }
-        }
     }
+
+    // Final post block with CD pipeline trigger
     post {
         always {
-            archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
+            archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true, fingerprint: true
             sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
             sh "docker rmi ${DOCKER_IMAGE}:latest || true"
         }
+
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'CI Pipeline completed successfully!'
+            echo "Built and pushed image: ${DOCKER_IMAGE}:${IMAGE_TAG}"
+            echo 'Triggering CD Pipeline on main branch...'
+
+            build job: 'Node.js-Project-Pipeline-Deployment',  // Change to your exact CD job name
+                  parameters: [
+                      string(name: 'IMAGE_TAG', value: "${BUILD_NUMBER}")
+                  ],
+                  wait: false,           // Fire-and-forget (recommended)
+                  propagate: false       // CI won't fail if CD fails later
         }
+
         failure {
-            echo 'Pipeline failed!'
+            echo 'CI Pipeline failed! CD pipeline will NOT be triggered.'
         }
     }
 }
