@@ -55,7 +55,6 @@ pipeline {
                     --scan ./
                     --disableYarnAudit
                     --disableNodeAudit
-                    --noupdate
                     --enableExperimental
                     --out .
                     --format ALL
