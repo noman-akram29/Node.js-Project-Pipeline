@@ -16,9 +16,7 @@ pipeline {
 
         stage('CheckOut from SCM') {
             steps {
-                git branch: 'dev', 
-                    credentialsId: 'Github-Token-for-Jenkins', 
-                    url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
+                git branch: 'dev', credentialsId: 'Github-Token-for-Jenkins', url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
             }
         }
         stage('Trivy FileSystem Scan') {
