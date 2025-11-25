@@ -1,50 +1,65 @@
 pipeline {
     agent any
+
+    // This parameter lets you manually trigger with any tag if needed
     parameters {
-        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag to deploy')
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag to deploy (default: latest)')
     }
+
     environment {
         DOCKER_IMAGE = 'nomanakram29/nodejs-app'
-        // Use passed tag, fallback to BUILD_NUMBER or latest
-        FINAL_TAG = "${params.IMAGE_TAG != 'latest' ? params.IMAGE_TAG : BUILD_NUMBER}"
+        FINAL_TAG    = "${params.IMAGE_TAG}"
+        DOCKER_CREDS = credentials('Docker-Creds-for-Jenkins')
     }
+
     stages {
-        stage('WorkSpace CleanUp') {
-            steps { cleanWs() }
-        }
-        stage('CheckOut from SCM') {
+        stage('Workspace Cleanup') { steps { cleanWs() } }
+
+        stage('Checkout main') {
             steps {
-                git branch: 'main', 
-                    credentialsId: 'Github-Token-for-Jenkins', 
+                git branch: 'main',
+                    credentialsId: 'Github-Token-for-Jenkins',
                     url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
             }
         }
-        stage('Deploy on Docker') {
+
+        stage('Deploy to Production') {
             steps {
                 sh '''
-                    echo "Stopping and removing old container (if exists)..."
+                    echo "Logging into Docker Hub..."
+                    echo "$DOCKER_CREDS_PSW" | docker login -u "$DOCKER_CREDS_USR" --password-stdin
+
+                    echo "Stopping old container..."
                     docker stop nodejs-app || true
                     docker rm nodejs-app || true
-                    
-                    echo "Pulling latest image tag: ${FINAL_TAG}"
+                    docker rmi ${DOCKER_IMAGE}:${FINAL_TAG} || true
+
+                    echo "Pulling image: ${DOCKER_IMAGE}:${FINAL_TAG}"
                     docker pull ${DOCKER_IMAGE}:${FINAL_TAG}
-                    
+
                     echo "Starting new container..."
                     docker run -d \
                         --name nodejs-app \
                         --restart unless-stopped \
                         -p 3000:3000 \
                         ${DOCKER_IMAGE}:${FINAL_TAG}
-                        
-                    echo "Deployed successfully with tag: ${FINAL_TAG}"
-                    echo "Your app is running at: http://$(hostname -I | awk '{print $1}'):3000"
+
+                    echo "Deployment SUCCESSFUL!"
+                    echo "App running at: http://$(hostname -I | awk '{print $1}'):3000"
                 '''
             }
         }
     }
+
     post {
+        success {
+            echo "Production deployed successfully with image: ${DOCKER_IMAGE}:${FINAL_TAG}"
+        }
+        failure {
+            echo "Deployment FAILED! Check logs above."
+        }
         always {
-            echo "Deployment attempt finished for tag: ${FINAL_TAG}"
+            sh 'docker logout || true'
         }
     }
 }
