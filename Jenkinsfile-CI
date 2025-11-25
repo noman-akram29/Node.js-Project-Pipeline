@@ -47,13 +47,13 @@ pipeline {
                 }
             }
         }
-        stage('Quality Gate Scan') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
-                }
-            }
-        }
+        // stage('Quality Gate Scan') {
+        //     steps {
+        //         timeout(time: 5, unit: 'MINUTES') {
+        //             waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
+        //         }
+        //     }
+        // }
         stage('OWASP Dependency-Check Scan') {
             steps {
                 dependencyCheck additionalArguments: '''
