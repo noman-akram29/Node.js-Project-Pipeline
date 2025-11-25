@@ -6,6 +6,8 @@ pipeline {
     }
     environment {
         SCANNER_HOME = tool 'SonarQube-Scanner-Tool'
+        DOCKER_IMAGE = 'nomanakram29/nodejs-app'
+        IMAGE_TAG    = "${BUILD_NUMBER}"
     }
     stages {
         stage('WorkSpace CleanUp') {
@@ -14,7 +16,9 @@ pipeline {
 
         stage('CheckOut from SCM') {
             steps {
-                git branch: 'dev', credentialsId: 'Github-Token-for-Jenkins', url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
+                git branch: 'dev', 
+                    credentialsId: 'Github-Token-for-Jenkins', 
+                    url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
             }
         }
         stage('Trivy FileSystem Scan') {
@@ -30,9 +34,12 @@ pipeline {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
                         $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.projectName=NodeJs-Project \
                         -Dsonar.projectKey=NodeJs-Project \
-                        -Dsonar.java.binaries=.
+                        -Dsonar.projectName="Node.js Project" \
+                        -Dsonar.sources=. \
+                        -Dsonar.exclusions=node_modules/**,coverage/**,dist/**,test/** \
+                        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                        -Dsonar.sourceEncoding=UTF-8
                     '''
                 }
             }
@@ -53,15 +60,12 @@ pipeline {
             steps {
                 dependencyCheck additionalArguments: '''
                     --scan ./
-                    --disableYarnAudit
-                    --disableNodeAudit
-                    --enableExperimental
-                    --out .
                     --format ALL
+                    --out dependency-check-report
                     --prettyPrint
+                    --enableExperimental
                 ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
-
-                dependencyCheckPublisher pattern: '**/dependency-check-report.*'
+                dependencyCheckPublisher pattern: 'dependency-check-report.html'
             }
         }
         stage('Build & Tag Docker Image') {
@@ -82,5 +86,15 @@ pipeline {
                 """
             }
         }
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'Docker-Token-for-Jenkins') {
+                        def image = docker.image("${DOCKER_IMAGE}:${IMAGE_TAG}")
+                        image.push()
+                        image.push('latest')
+                    }
+                }
+            }
     }
 }
