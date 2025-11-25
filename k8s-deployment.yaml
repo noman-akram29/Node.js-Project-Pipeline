@@ -1,0 +1,52 @@
+# File: k8s-deployment.yaml   (save this in your repo root or k8s/ folder)
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-app                  # Name of the deployment
+  labels:
+    app: nodejs-app
+spec:
+  replicas: 3                        # Change anytime – 3 pods for high availability
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: nodejs-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-app
+    spec:
+      containers:
+        - name: nodejs-app
+          image: nomanakram29/nodejs-app:latest   # This line gets updated by Jenkins
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always                # Always pull latest (or specific tag)
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-app-service
+  labels:
+    app: nodejs-app
+spec:
+  type: LoadBalancer                 # Use NodePort if no cloud LB (e.g. Minikube)
+  selector:
+    app: nodejs-app
+  ports:
+    - protocol: TCP
+      port: 80                       # External port (what you access)
+      targetPort: 3000               # Container port

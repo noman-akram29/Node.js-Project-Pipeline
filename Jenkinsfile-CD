@@ -18,7 +18,7 @@ pipeline {
         stage('Checkout main') {
             steps {
                 git branch: 'main',
-                    credentialsId: 'Github-Token-for-Jenkins',
+                    credentialsId: 'GitHub-Token-for-Jenkins',
                     url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
             }
         }
@@ -47,6 +47,28 @@ pipeline {
                     echo "Deployment SUCCESSFUL!"
                     echo "App running at: http://$(hostname -I | awk '{print $1}'):3000"
                 '''
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    withKubeConfig(credentialsId: 'K8s-Creds-for-Jenkins') {   // or your token credential
+                        sh '''
+                            echo "Updating image tag in manifest..."
+                            sed -i "s|image: nomanakram29/nodejs-app:.*|image: nomanakram29/nodejs-app:${FINAL_TAG}|" k8s-deployment.yaml
+
+                            echo "Applying Kubernetes manifests..."
+                            kubectl apply -f k8s-deployment.yaml
+
+                            echo "Waiting for rollout to complete..."
+                            kubectl rollout status deployment/nodejs-app --timeout=180s
+
+                            echo "Deployment successful!"
+                            echo "Getting service URL..."
+                            kubectl get service nodejs-app-service
+                        '''
+                    }
+                }
             }
         }
     }

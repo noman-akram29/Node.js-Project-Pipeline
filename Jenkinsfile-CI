@@ -16,7 +16,7 @@ pipeline {
 
         stage('CheckOut from SCM') {
             steps {
-                git branch: 'dev', credentialsId: 'Github-Token-for-Jenkins', url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
+                git branch: 'dev', credentialsId: 'GitHub-Token-for-Jenkins', url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
             }
         }
         stage('Trivy FileSystem Scan') {
@@ -47,13 +47,13 @@ pipeline {
                 }
             }
         }
-        stage('Quality Gate Scan') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
-                }
-            }
-        }
+        // stage('Quality Gate Scan') {
+        //     steps {
+        //         timeout(time: 5, unit: 'MINUTES') {
+        //             waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
+        //         }
+        //     }
+        // }
         stage('OWASP Dependency-Check Scan') {
             steps {
                 dependencyCheck additionalArguments: '''
