@@ -101,7 +101,7 @@ pipeline {
             echo "Built and pushed image: ${DOCKER_IMAGE}:${IMAGE_TAG}"
             echo 'Triggering CD Pipeline on main branch...'
 
-            build job: 'NodeJs-CD-Pipeline',  // Change to your exact CD job name
+            build job: 'Node.js-Project-Pipeline-Deployment',  // Change to your exact CD job name
                   parameters: [
                       string(name: 'IMAGE_TAG', value: "${BUILD_NUMBER}")
                   ],
