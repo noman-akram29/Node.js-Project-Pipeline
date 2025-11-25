@@ -77,7 +77,6 @@ pipeline {
                 }
             }
         }
-
         stage('Trivy Docker Image Scan') {
             steps {
                 sh """
