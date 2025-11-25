@@ -27,6 +27,11 @@ pipeline {
                 '''
             }
         }
+        stage('Install Dependencies') {
+            steps {
+                sh "npm install"
+            }
+        }
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
@@ -47,11 +52,6 @@ pipeline {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
                 }
-            }
-        }
-        stage('Install Dependencies') {
-            steps {
-                sh "npm install"
             }
         }
         stage('OWASP Dependency-Check Scan') {
