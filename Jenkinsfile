@@ -47,7 +47,7 @@ pipeline {
                 }
             }
         }
-        stage('Quality Gate') {
+        stage('Quality Gate Scan') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true, credentialsId: 'SonarQube-Token-for-Jenkins'
@@ -83,38 +83,29 @@ pipeline {
                 """
             }
         }
-        stage('Deploy on Docker') {
-            when { branch 'main' }
-            steps {
-                sh '''
-                    echo "Stopping and removing old container (if exists)..."
-                    docker stop nodejs-app || true
-                    docker rm nodejs-app || true
-
-                    echo "Starting new container with image tag ${IMAGE_TAG}..."
-                    docker run -d \
-                        --name nodejs-app \
-                        --restart unless-stopped \
-                        -p 3000:3000 \
-                        ${DOCKER_IMAGE}:${IMAGE_TAG}
-
-                    echo "Deployed successfully!"
-                    echo "Your app is running at: http://$(hostname -I | awk '{print $1}'):3000"
-                '''
-            }
-        }
     }
     post {
         always {
-            archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
+            archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true, fingerprint: true
             sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} || true"
             sh "docker rmi ${DOCKER_IMAGE}:latest || true"
         }
+
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'CI Pipeline completed successfully!'
+            echo "Built and pushed image: ${DOCKER_IMAGE}:${IMAGE_TAG}"
+            echo 'Triggering CD Pipeline on main branch...'
+
+            build job: 'NodeJs-CD-Pipeline',  // Change to your exact CD job name
+                  parameters: [
+                      string(name: 'IMAGE_TAG', value: "${BUILD_NUMBER}")
+                  ],
+                  wait: false,           // Fire-and-forget (recommended)
+                  propagate: false       // CI won't fail if CD fails later
         }
+
         failure {
-            echo 'Pipeline failed!'
+            echo 'CI Pipeline failed! CD pipeline will NOT be triggered.'
         }
     }
 }
