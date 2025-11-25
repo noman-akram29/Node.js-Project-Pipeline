@@ -97,20 +97,16 @@ pipeline {
         }
 
         success {
-            echo 'CI Pipeline completed successfully!'
-            echo "Built and pushed image: ${DOCKER_IMAGE}:${IMAGE_TAG}"
-            echo 'Triggering CD Pipeline on main branch...'
-
-            build job: 'Node.js-Project-Pipeline-Deployment',  // Change to your exact CD job name
-                  parameters: [
-                      string(name: 'IMAGE_TAG', value: "${BUILD_NUMBER}")
-                  ],
-                  wait: false,           // Fire-and-forget (recommended)
-                  propagate: false       // CI won't fail if CD fails later
+            echo '=================================================='
+            echo 'CI PASSED! Image ready for production'
+            echo "Image: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+            echo 'Go to GitHub → Create Pull Request: dev → main'
+            echo 'After you merge, deployment will start automatically'
+            echo '=================================================='
         }
 
         failure {
-            echo 'CI Pipeline failed! CD pipeline will NOT be triggered.'
+            echo 'CI FAILED! Fix the issues and push again.'
         }
     }
 }
