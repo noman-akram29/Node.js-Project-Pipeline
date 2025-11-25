@@ -52,7 +52,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    withKubeConfig(credentialsId: 'k8s') {   // or your token credential
+                    withKubeConfig(credentialsId: 'K8s-Creds-for-Jenkins') {   // or your token credential
                         sh '''
                             echo "Updating image tag in manifest..."
                             sed -i "s|image: nomanakram29/nodejs-app:.*|image: nomanakram29/nodejs-app:${FINAL_TAG}|" k8s-deployment.yaml
