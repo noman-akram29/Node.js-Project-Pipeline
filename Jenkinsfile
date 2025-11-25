@@ -70,7 +70,7 @@ pipeline {
             steps {
                 script {
                     def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
-                    docker.withRegistry('', 'Docker-Token-for-Jenkins') {
+                    docker.withRegistry('', 'Docker-Creds-for-Jenkins') {
                         app.push()
                         app.push('latest')
                     }
