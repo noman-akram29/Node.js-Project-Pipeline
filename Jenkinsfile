@@ -88,10 +88,16 @@ pipeline {
                 """
             }
         }
-        post {
-            always {
-                archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
-            }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: '*-report.html', allowEmptyArchive: true
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
