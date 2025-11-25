@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag to deploy')
+    }
+    environment {
+        DOCKER_IMAGE = 'nomanakram29/nodejs-app'
+        // Use passed tag, fallback to BUILD_NUMBER or latest
+        FINAL_TAG = "${params.IMAGE_TAG != 'latest' ? params.IMAGE_TAG : BUILD_NUMBER}"
+    }
+    stages {
+        stage('WorkSpace CleanUp') {
+            steps { cleanWs() }
+        }
+        stage('CheckOut from SCM') {
+            steps {
+                git branch: 'main', 
+                    credentialsId: 'Github-Token-for-Jenkins', 
+                    url: 'https://github.com/noman-akram29/Node.js-Project-Pipeline.git'
+            }
+        }
+        stage('Deploy on Docker') {
+            steps {
+                sh '''
+                    echo "Stopping and removing old container (if exists)..."
+                    docker stop nodejs-app || true
+                    docker rm nodejs-app || true
+                    
+                    echo "Pulling latest image tag: ${FINAL_TAG}"
+                    docker pull ${DOCKER_IMAGE}:${FINAL_TAG}
+                    
+                    echo "Starting new container..."
+                    docker run -d \
+                        --name nodejs-app \
+                        --restart unless-stopped \
+                        -p 3000:3000 \
+                        ${DOCKER_IMAGE}:${FINAL_TAG}
+                        
+                    echo "Deployed successfully with tag: ${FINAL_TAG}"
+                    echo "Your app is running at: http://$(hostname -I | awk '{print $1}'):3000"
+                '''
+            }
+        }
+    }
+    post {
+        always {
+            echo "Deployment attempt finished for tag: ${FINAL_TAG}"
+        }
+    }
+}
