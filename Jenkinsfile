@@ -59,8 +59,6 @@ pipeline {
                 dependencyCheck additionalArguments: '''
                     --scan ./
                     --format ALL
-                    --out dependency-check-report
-                    --prettyPrint
                     --enableExperimental
                 ''', odcInstallation: 'Dependency-Check-12.1.9-Tool'
                 dependencyCheckPublisher pattern: 'dependency-check-report.html'
@@ -85,7 +83,7 @@ pipeline {
                 """
             }
         }
-        stage('Deploy Locally') {
+        stage('Deploy on Docker') {
             when { branch 'main' }
             steps {
                 sh '''
