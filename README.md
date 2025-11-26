@@ -58,6 +58,7 @@ This is a **Node.js web application** designed for learning and demonstration pu
 - Kubernetes cluster (Minikube, AWS EKS, GKE, or similar)
 - Docker Hub account
 - GitHub repository access
+<img width="1915" height="505" alt="image" src="https://github.com/user-attachments/assets/d6a99c8c-2513-42b5-ac3e-09be5d61ab4e" />
 
 ---
 
@@ -73,4 +74,7 @@ Node.js-Project-Pipeline/
 ├─ .gitignore
 ├─ README.md
 └─ other source files
+<img width="1920" height="911" alt="image" src="https://github.com/user-attachments/assets/8230c10f-d5ef-40f6-beff-d842753b9f5f" />
+
+<img width="1920" height="911" alt="image" src="https://github.com/user-attachments/assets/3af842f5-da05-4130-97b3-d302aa51b61c" />
 
