@@ -1,8 +1,7 @@
-# File: k8s-deployment.yaml   (save this in your repo root or k8s/ folder)
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: nodejs-webapp
   name: nodejs-app                  # Name of the deployment
   labels:
     app: nodejs-app
@@ -39,6 +38,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: nodejs-webapp
   name: nodejs-app-service
   labels:
     app: nodejs-app
